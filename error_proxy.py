@@ -6,7 +6,12 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 class ErrorHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        self.send_response(self.config['get_response'])
+        print self.path
+        conf = self.config['get']
+        if self.path in conf:
+            self.send_error(conf[self.path])
+        else:
+            self.send_error(conf['*'])
 
 if sys.argv[1:]:
     config_file = sys.argv[1:]

@@ -5,8 +5,9 @@ import json
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from urlparse import urljoin
 from urllib import URLopener
+from threading import Thread
 
-class ErrorHTTPRequestHandler(BaseHTTPRequestHandler):
+class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
     def do_GET(self):
         get_conf = self.config['get']
         if self.path in get_conf:
@@ -23,11 +24,18 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     if sys.argv[1:]:
-        config_file = sys.argv[1:]
+        config_file = sys.argv[1]
     else:
         config_file = "Proxyfile"
-    with open(config_file) as c:
-        config = json.load(c)
-    ErrorHTTPRequestHandler.config = config
-    httpd = HTTPServer(("localhost", config['port']), ErrorHTTPRequestHandler)
-    httpd.serve_forever()
+    with open(config_file) as fh:
+        config = json.load(fh)
+    httpds = []
+    for i, c in enumerate(config):
+        HandlerClass = type('ProxyHandler{}'.format(i),
+                (ErrorHTTPRequestHandler,),
+                { 'config': c })
+        httpd = HTTPServer(("localhost", c['port']), HandlerClass)
+        httpds.append(httpd)
+        Thread(target=httpd.serve_forever).start()
+    for h in httpds:
+        h.shutdown()

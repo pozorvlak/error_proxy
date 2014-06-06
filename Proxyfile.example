@@ -1,8 +1,15 @@
-{
+[{
         "port": 8338,
         "forward_to": "http://localhost:8080",
         "get": {
                 "*": 404,
                 "/fred/barney": 500
         }
-}
+},
+{
+        "port": 8113,
+        "get": {
+                "*": 309,
+                "/betty/wilma": 507
+        }
+}]

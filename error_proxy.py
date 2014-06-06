@@ -21,12 +21,13 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(get_conf['*'])
 
-if sys.argv[1:]:
-    config_file = sys.argv[1:]
-else:
-    config_file = "Proxyfile"
-with open(config_file) as c:
-    config = json.load(c)
-ErrorHTTPRequestHandler.config = config
-httpd = HTTPServer(("localhost", config['port']), ErrorHTTPRequestHandler)
-httpd.serve_forever()
+if __name__ == "__main__":
+    if sys.argv[1:]:
+        config_file = sys.argv[1:]
+    else:
+        config_file = "Proxyfile"
+    with open(config_file) as c:
+        config = json.load(c)
+    ErrorHTTPRequestHandler.config = config
+    httpd = HTTPServer(("localhost", config['port']), ErrorHTTPRequestHandler)
+    httpd.serve_forever()

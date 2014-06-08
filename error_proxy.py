@@ -47,10 +47,10 @@ def start_servers(config_file):
                 (ErrorHTTPRequestHandler,),
                 { 'config': c })
         if 'forward_to' in c:
-            print "Starting server on port {}, proxying {}".format(
+            print "Starting server on http://localhost:{}, proxying {}".format(
                     c['port'], c['forward_to'])
         else:
-            print "Starting server on port {}".format(c['port'])
+            print "Starting server on http://localhost:{}".format(c['port'])
         httpd = HTTPServer(("localhost", c['port']), HandlerClass)
         httpds.append(httpd)
         Thread(target=httpd.serve_forever).start()

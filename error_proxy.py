@@ -11,10 +11,19 @@ import os
 import time
 
 class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
+    def is_path_prefix(self, needle):
+        return self.path[0:len(needle)] == needle
+
     def do_GET(self):
         get_conf = self.config['get']
-        if self.path in get_conf:
-            self.send_error(get_conf[self.path])
+        matchlen = 0
+        match = None
+        for path in get_conf:
+            if self.is_path_prefix(path) and len(path) > matchlen:
+                matchlen = len(path)
+                match = path
+        if matchlen > 0:
+            self.send_error(get_conf[match])
         elif "forward_to" in self.config:
             url = urljoin(self.config['forward_to'], self.path)
             self.log_request()

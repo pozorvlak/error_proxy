@@ -7,6 +7,8 @@ from urlparse import urljoin
 from urllib import URLopener
 from threading import Thread
 import signal
+import os
+import time
 
 class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
     def do_GET(self):
@@ -25,18 +27,19 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
 
 httpds = []
 
-def kill_all_servers(*args):
+def kill_all_servers():
     for h in httpds:
         print "killing server on port {}".format(h.server_port)
         h.shutdown()
+    # Garbage-collect all servers, to prevent port conflicts with new ones
+    for i in xrange(len(httpds)):
+        httpds.pop()
+
+def shutdown(*args):
+    kill_all_servers()
     sys.exit(0)
 
-
-if __name__ == "__main__":
-    if sys.argv[1:]:
-        config_file = sys.argv[1]
-    else:
-        config_file = "Proxyfile"
+def start_servers(config_file):
     with open(config_file) as fh:
         config = json.load(fh)
     for i, c in enumerate(config):
@@ -51,6 +54,20 @@ if __name__ == "__main__":
         httpd = HTTPServer(("localhost", c['port']), HandlerClass)
         httpds.append(httpd)
         Thread(target=httpd.serve_forever).start()
-    signal.signal(signal.SIGINT, kill_all_servers)
+
+if __name__ == "__main__":
+    if sys.argv[1:]:
+        config_file = sys.argv[1]
+    else:
+        config_file = "Proxyfile"
+    config_mtime = os.stat(config_file).st_mtime
+    start_servers(config_file)
+    signal.signal(signal.SIGINT, shutdown)
     while 1:
-        pass
+        time.sleep(1)
+        new_config_mtime = os.stat(config_file).st_mtime
+        if new_config_mtime != config_mtime:
+            config_mtime = new_config_mtime
+            print "Detected change to {}".format(config_file)
+            kill_all_servers()
+            start_servers(config_file)

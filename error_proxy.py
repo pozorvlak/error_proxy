@@ -31,8 +31,12 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
             o = URLopener().open(url)
             self.wfile.write(o.read())
             o.close()
-        else:
+        elif "*" in get_conf:
             self.send_error(get_conf['*'])
+        else:
+            self.log_message(
+                "No match for {} and no default configured".format(self.path))
+            self.send_error(404)
 
 httpds = []
 

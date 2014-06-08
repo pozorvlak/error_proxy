@@ -14,16 +14,16 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
     def is_path_prefix(self, needle):
         return self.path[0:len(needle)] == needle
 
-    def do_GET(self):
-        get_conf = self.config['get']
+    def do_method(self, method):
+        method_conf = self.config[method]
         matchlen = 0
         match = None
-        for path in get_conf:
+        for path in method_conf:
             if self.is_path_prefix(path) and len(path) > matchlen:
                 matchlen = len(path)
                 match = path
         if matchlen > 0:
-            self.send_error(get_conf[match])
+            self.send_error(method_conf[match])
         elif "forward_to" in self.config:
             url = urljoin(self.config['forward_to'], self.path)
             self.log_request()
@@ -31,12 +31,30 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
             o = URLopener().open(url)
             self.wfile.write(o.read())
             o.close()
-        elif "*" in get_conf:
-            self.send_error(get_conf['*'])
+        elif "*" in method_conf:
+            self.send_error(method_conf['*'])
         else:
+            print (method.upper(), self.path, self.config['port'])
             self.log_message(
-                "No match for {} and no default configured".format(self.path))
+                "No match for %s %s on port %d and no default configured" %
+                    (method.upper(), self.path, self.config['port']))
             self.send_error(404)
+
+    def do_GET(self):
+        self.do_method('get')
+
+    def do_POST(self):
+        self.do_method('post')
+
+    def do_DELETE(self):
+        self.do_method('delete')
+
+    def do_PUT(self):
+        self.do_method('put')
+
+    def do_HEAD(self):
+        self.do_method('head')
+
 
 httpds = []
 

@@ -6,6 +6,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from urlparse import urljoin
 from urllib import URLopener
 from threading import Thread
+import signal
 
 class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
     def do_GET(self):
@@ -22,6 +23,15 @@ class ErrorHTTPRequestHandler(BaseHTTPRequestHandler, object):
         else:
             self.send_error(get_conf['*'])
 
+httpds = []
+
+def kill_all_servers(*args):
+    for h in httpds:
+        print "killing server on port {}".format(h.server_port)
+        h.shutdown()
+    sys.exit(0)
+
+
 if __name__ == "__main__":
     if sys.argv[1:]:
         config_file = sys.argv[1]
@@ -29,13 +39,18 @@ if __name__ == "__main__":
         config_file = "Proxyfile"
     with open(config_file) as fh:
         config = json.load(fh)
-    httpds = []
     for i, c in enumerate(config):
         HandlerClass = type('ProxyHandler{}'.format(i),
                 (ErrorHTTPRequestHandler,),
                 { 'config': c })
+        if 'forward_to' in c:
+            print "Starting server on port {}, proxying {}".format(
+                    c['port'], c['forward_to'])
+        else:
+            print "Starting server on port {}".format(c['port'])
         httpd = HTTPServer(("localhost", c['port']), HandlerClass)
         httpds.append(httpd)
         Thread(target=httpd.serve_forever).start()
-    for h in httpds:
-        h.shutdown()
+    signal.signal(signal.SIGINT, kill_all_servers)
+    while 1:
+        pass
